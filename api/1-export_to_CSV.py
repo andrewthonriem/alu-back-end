@@ -1,33 +1,53 @@
 #!/usr/bin/python3
 """
-Using a REST API and an EMP_ID, save info about their TODO list in a csv file
+    Python script that exports data in the CSV format
 """
+import csv
+import json
 import requests
-import sys
+from sys import argv
 
 
 if __name__ == "__main__":
-    """ main section """
-    EMP_ID = sys.argv[1]
-    BASE_URL = 'https://jsonplaceholder.typicode.com'
-    employee = requests.get(
-        BASE_URL + f'/users/{EMP_ID}/').json()
-    EMPLOYEE_NAME = employee.get("username")
-    employee_todos = requests.get(
-        BASE_URL + f'/users/{EMP_ID}/todos').json()
-    serialized_todos = {}
+    """
+        Request user info by employee ID
+    """
+    request_employee = requests.get(
+        'https://jsonplaceholder.typicode.com/users/{}'.format(argv[1]))
+    """
+        Convert json to dictionary
+    """
+    user = json.loads(request_employee.text)
+    """
+        Extract username
+    """
+    username = user.get("username")
 
-    for todo in employee_todos:
-        serialized_todos.update({todo.get("title"): todo.get("completed")})
+    """
+        Request user's TODO list
+    """
+    request_todos = requests.get(
+        'https://jsonplaceholder.typicode.com/todos?userId={}'.format(argv[1]))
+    """
+        Dictionary to store task status(completed) in boolean format
+    """
+    tasks = {}
+    """
+        Convert json to list of dictionaries
+    """
+    user_todos = json.loads(request_todos.text)
+    """
+        Loop through dictionary & get completed tasks
+    """
+    for dictionary in user_todos:
+        tasks.update({dictionary.get("title"): dictionary.get("completed")})
 
-    COMPLETED_LEN = len([k for k, v in serialized_todos.items() if v is True])
-    with open(str(EMP_ID) + '.csv', "w") as f:
-        [
-            f.write(
-                '"' + str(sys.argv[1]) + '",' +
-                '"' + EMPLOYEE_NAME + '",' +
-                '"' + str(todo["completed"]) + '",' +
-                '"' + todo["title"] + '",' + "\n"
-            )
-            for todo in employee_todos
-        ]
+    """
+        Export to CSV
+    """
+    with open('{}.csv'.format(argv[1]), mode='w', newline='') as file:
+        file_editor = csv.writer(file, delimiter=',', quoting=csv.QUOTE_ALL)
+        for k, v in tasks.items():
+            file_editor.writerow([argv[1], username, v, k])
+
+    print('Data exported to {}.csv'.format(argv[1]))

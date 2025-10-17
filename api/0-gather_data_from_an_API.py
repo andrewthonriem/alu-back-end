@@ -1,27 +1,54 @@
 #!/usr/bin/python3
 """
-Using a REST API, and a given emp_ID, return info about their TODO list.
+    Python script that returns TODO list progress for a given employee ID
 """
+import json
 import requests
-import sys
+from sys import argv
 
 
 if __name__ == "__main__":
-    """ main section """
-    BASE_URL = 'https://jsonplaceholder.typicode.com'
-    employee = requests.get(
-        BASE_URL + f'/users/{sys.argv[1]}/').json()
-    EMPLOYEE_NAME = employee.get("name")
-    employee_todos = requests.get(
-        BASE_URL + f'/users/{sys.argv[1]}/todos').json()
-    serialized_todos = {}
+    """
+        Request user info by employee ID
+    """
+    request_employee = requests.get(
+        'https://jsonplaceholder.typicode.com/users/{}/'.format(argv[1]))
+    """
+        Convert JSON to dictionary
+    """
+    employee = json.loads(request_employee.text)
+    """
+        Extract employee name
+    """
+    employee_name = employee.get("name")
 
-    for todo in employee_todos:
-        serialized_todos.update({todo.get("title"): todo.get("completed")})
+    """
+        Request user's TODO list
+    """
+    request_todos = requests.get(
+        'https://jsonplaceholder.typicode.com/users/{}/todos'.format(argv[1]))
+    """
+        Dictionary to store task status in boolean format
+    """
+    tasks = {}
+    """
+        Convert JSON to list of dictionaries
+    """
+    employee_todos = json.loads(request_todos.text)
+    """
+        Loop through dictionary and get completed tasks
+    """
+    for dictionary in employee_todos:
+        tasks.update({dictionary.get("title"): dictionary.get("completed")})
 
-    COMPLETED_LEN = len([k for k, v in serialized_todos.items() if v is True])
+    """
+        Return name, total number of tasks and completed tasks
+    """
+    EMPLOYEE_NAME = employee_name
+    TOTAL_NUMBER_OF_TASKS = len(tasks)
+    NUMBER_OF_DONE_TASKS = len([k for k, v in tasks.items() if v is True])
     print("Employee {} is done with tasks({}/{}):".format(
-        EMPLOYEE_NAME, COMPLETED_LEN, len(serialized_todos)))
-    for key, val in serialized_todos.items():
-        if val is True:
-            print("\t {}".format(key))
+        EMPLOYEE_NAME, NUMBER_OF_DONE_TASKS, TOTAL_NUMBER_OF_TASKS))
+    for k, v in tasks.items():
+        if v is True:
+            print("\t {}".format(k))
